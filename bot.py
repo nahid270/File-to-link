@@ -2,15 +2,12 @@ import os
 import asyncio
 import threading
 import psutil
-import aiohttp
-import cloudscraper
 from pyrogram import Client, filters
 from flask import Flask, send_file, Response, render_template_string, jsonify
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
-from jinja2 import Template
 
-# ========= LOAD ENVIRONMENT =========
+# ========= LOAD ENV =========
 load_dotenv()
 
 API_ID = int(os.getenv("API_ID"))
@@ -19,12 +16,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
-# ========= SETUP =========
-bot = Client("file_link_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# ========= INIT =========
+bot = Client("file_stream_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 app = Flask(__name__)
 db = AsyncIOMotorClient(MONGO_URI).bot_db
-scraper = cloudscraper.create_scraper()
-
 download_cache = {}
 
 # ========= HTML TEMPLATE =========
@@ -40,13 +35,13 @@ HTML_TEMPLATE = """
   </style>
 </head>
 <body>
-  <h2>🎬 {{ file_name }}</h2>
+  <h2>\ud83c\udfac {{ file_name }}</h2>
   <video controls autoplay>
     <source src="{{ stream_url }}" type="video/mp4">
     Your browser does not support the video tag.
   </video>
   <br>
-  <a class="btn" href="{{ download_url }}">⬇️ Download</a>
+  <a class="btn" href="{{ download_url }}">\u2b07\ufe0f Download</a>
 </body>
 </html>
 """
@@ -64,16 +59,17 @@ async def handle_file(client, message):
     stream_link = f"{BASE_URL}/watch/{file_id}"
     download_link = f"{BASE_URL}/download/{file_id}"
 
-    reply = f"🎬 **{file_name}**\n\n▶️ [Stream]({stream_link}) | ⬇️ [Download]({download_link})"
+    reply = f"\ud83c\udfac **{file_name}**\n\n\u25b6\ufe0f [Stream]({stream_link}) | \u2b07\ufe0f [Download]({download_link})"
     await message.reply_text(reply, disable_web_page_preview=True)
 
 # ========= FLASK ROUTES =========
 @app.route("/")
 def index():
-    return "✅ File to Link Bot is Running!"
+    return "\u2705 File to Link Bot is Running!"
 
 @app.route("/watch/<file_id>")
 def watch(file_id):
+    run_bot()
     tg_file = get_file(file_id)
     if not tg_file: return "File not found"
     file_name = os.path.basename(tg_file)
@@ -85,12 +81,18 @@ def watch(file_id):
 
 @app.route("/stream/<file_id>")
 def stream(file_id):
+    run_bot()
     tg_file = get_file(file_id)
+    if not tg_file or not os.path.exists(tg_file):
+        return "\u274c File not found"
     return Response(open(tg_file, "rb"), mimetype="video/mp4")
 
 @app.route("/download/<file_id>")
 def download(file_id):
+    run_bot()
     tg_file = get_file(file_id)
+    if not tg_file or not os.path.exists(tg_file):
+        return "\u274c File not found"
     return send_file(tg_file, as_attachment=True)
 
 @app.route("/status")
@@ -101,18 +103,25 @@ def status():
         "uptime": f"{psutil.boot_time()} (epoch)"
     })
 
-# ========= HELPER =========
+# ========= UTILS =========
 def get_file(file_id):
     if file_id in download_cache:
         return download_cache[file_id]
-    tg_file = bot.download_media(file_id)
+    tg_file = bot.download_media(file_id, file_name=f"/tmp/{file_id}.mp4")
     download_cache[file_id] = tg_file
     return tg_file
+
+def run_bot():
+    try:
+        if not bot.is_connected:
+            bot.start()
+    except Exception as e:
+        print(f"[BOT] Already running or error: {e}")
 
 def run_flask():
     app.run(host="0.0.0.0", port=5000)
 
-# ========= MAIN =========
+# ========= START =========
 if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
-    asyncio.run(bot.run())
+    bot.run()
