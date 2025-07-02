@@ -2,7 +2,7 @@ pyrogram
 tgcrypto
 flask
 psutil
-aiohttp
-cloudscraper
 motor
 python-dotenv
+aiohttp
+cloudscraper
