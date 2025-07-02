@@ -25,23 +25,56 @@ download_cache = {}
 # ========= HTML TEMPLATE =========
 HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html>
+<html lang=\"en\">
 <head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
   <title>{{ file_name }}</title>
   <style>
-    body { font-family: sans-serif; background: #1e293b; color: white; padding: 40px; text-align: center; }
-    video { width: 90%; max-width: 720px; border-radius: 12px; margin-top: 20px; }
-    .btn { display: inline-block; padding: 12px 25px; margin-top: 20px; background: #3b82f6; color: white; border-radius: 6px; text-decoration: none; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f172a;
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    video {
+      width: 95%;
+      max-width: 720px;
+      margin-top: 20px;
+      border: 4px solid #334155;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 25px;
+      padding: 12px 24px;
+      background-color: #3b82f6;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
+    .btn:hover {
+      background-color: #2563eb;
+    }
   </style>
 </head>
 <body>
-  <h2>\ud83c\udfac {{ file_name }}</h2>
+  <h1>🎬 {{ file_name }}</h1>
   <video controls autoplay>
-    <source src="{{ stream_url }}" type="video/mp4">
+    <source src=\"{{ stream_url }}\" type=\"video/mp4\">
     Your browser does not support the video tag.
   </video>
   <br>
-  <a class="btn" href="{{ download_url }}">\u2b07\ufe0f Download</a>
+  <a class=\"btn\" href=\"{{ download_url }}\">⬇️ Download</a>
 </body>
 </html>
 """
@@ -59,13 +92,13 @@ async def handle_file(client, message):
     stream_link = f"{BASE_URL}/watch/{file_id}"
     download_link = f"{BASE_URL}/download/{file_id}"
 
-    reply = f"\ud83c\udfac **{file_name}**\n\n\u25b6\ufe0f [Stream]({stream_link}) | \u2b07\ufe0f [Download]({download_link})"
+    reply = f"🎬 **{file_name}**\n\n▶️ [Stream]({stream_link}) | ⬇️ [Download]({download_link})"
     await message.reply_text(reply, disable_web_page_preview=True)
 
 # ========= FLASK ROUTES =========
 @app.route("/")
 def index():
-    return "\u2705 File to Link Bot is Running!"
+    return "✅ File to Link Bot is Running!"
 
 @app.route("/watch/<file_id>")
 def watch(file_id):
@@ -84,7 +117,7 @@ def stream(file_id):
     run_bot()
     tg_file = get_file(file_id)
     if not tg_file or not os.path.exists(tg_file):
-        return "\u274c File not found"
+        return "❌ File not found"
     return Response(open(tg_file, "rb"), mimetype="video/mp4")
 
 @app.route("/download/<file_id>")
@@ -92,7 +125,7 @@ def download(file_id):
     run_bot()
     tg_file = get_file(file_id)
     if not tg_file or not os.path.exists(tg_file):
-        return "\u274c File not found"
+        return "❌ File not found"
     return send_file(tg_file, as_attachment=True)
 
 @app.route("/status")
