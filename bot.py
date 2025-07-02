@@ -31,50 +31,45 @@ HTML_TEMPLATE = """
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
   <title>{{ file_name }}</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #0f172a;
-      color: white;
+      background: #0f172a;
+      color: #fff;
+      font-family: Arial, sans-serif;
       padding: 40px;
       text-align: center;
     }
     h1 {
-      font-size: 24px;
       margin-bottom: 20px;
     }
     video {
-      width: 95%;
+      width: 90%;
       max-width: 720px;
-      margin-top: 20px;
       border: 4px solid #334155;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
     .btn {
       display: inline-block;
-      margin-top: 25px;
-      padding: 12px 24px;
-      background-color: #3b82f6;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #3b82f6;
       color: white;
       text-decoration: none;
-      font-weight: bold;
       border-radius: 8px;
-      transition: background-color 0.3s ease;
     }
     .btn:hover {
-      background-color: #2563eb;
+      background: #2563eb;
     }
   </style>
 </head>
 <body>
   <h1>🎬 {{ file_name }}</h1>
   <video controls autoplay>
-    <source src=\"{{ stream_url }}\" type=\"video/mp4\">
+    <source src="{{ stream_url }}" type="video/mp4">
     Your browser does not support the video tag.
   </video>
   <br>
-  <a class=\"btn\" href=\"{{ download_url }}\">⬇️ Download</a>
+  <a class="btn" href="{{ download_url }}">⬇️ Download</a>
 </body>
 </html>
 """
@@ -92,7 +87,7 @@ async def handle_file(client, message):
     stream_link = f"{BASE_URL}/watch/{file_id}"
     download_link = f"{BASE_URL}/download/{file_id}"
 
-    reply = f"🎬 **{file_name}**\n\n▶️ [Stream]({stream_link}) | ⬇️ [Download]({download_link})"
+    reply = f"🎬 **{file_name}**\n\n▶️ [Stream]({stream_link})\n⬇️ [Download]({download_link})"
     await message.reply_text(reply, disable_web_page_preview=True)
 
 # ========= FLASK ROUTES =========
@@ -104,7 +99,8 @@ def index():
 def watch(file_id):
     run_bot()
     tg_file = get_file(file_id)
-    if not tg_file: return "File not found"
+    if not tg_file:
+        return "❌ File not found"
     file_name = os.path.basename(tg_file)
     return render_template_string(HTML_TEMPLATE,
         file_name=file_name,
@@ -140,7 +136,11 @@ def status():
 def get_file(file_id):
     if file_id in download_cache:
         return download_cache[file_id]
-    tg_file = bot.download_media(file_id, file_name=f"/tmp/{file_id}.mp4")
+
+    async def download():
+        return await bot.download_media(file_id, file_name=f"/tmp/{file_id}.mp4")
+
+    tg_file = asyncio.run(download())
     download_cache[file_id] = tg_file
     return tg_file
 
@@ -152,7 +152,7 @@ def run_bot():
         print(f"[BOT] Already running or error: {e}")
 
 def run_flask():
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 # ========= START =========
 if __name__ == "__main__":
