@@ -99,7 +99,7 @@ def index():
 def watch(file_id):
     run_bot()
     tg_file = get_file(file_id)
-    if not tg_file:
+    if not tg_file or not os.path.exists(tg_file):
         return "❌ File not found"
     file_name = os.path.basename(tg_file)
     return render_template_string(HTML_TEMPLATE,
@@ -140,9 +140,14 @@ def get_file(file_id):
     async def download():
         return await bot.download_media(file_id, file_name=f"/tmp/{file_id}.mp4")
 
-    tg_file = asyncio.run(download())
-    download_cache[file_id] = tg_file
-    return tg_file
+    try:
+        tg_file = asyncio.run(download())
+        if tg_file and os.path.exists(tg_file):
+            download_cache[file_id] = tg_file
+            return tg_file
+    except Exception as e:
+        print(f"❌ Error downloading file: {e}")
+        return None
 
 def run_bot():
     try:
@@ -152,7 +157,8 @@ def run_bot():
         print(f"[BOT] Already running or error: {e}")
 
 def run_flask():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
 # ========= START =========
 if __name__ == "__main__":
