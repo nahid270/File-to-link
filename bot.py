@@ -6,9 +6,9 @@ import os
 
 # ========== CONFIG ==========
 
-API_ID = 123456          # <-- আপনার API ID দিন
-API_HASH = "your_api_hash_here"
-BOT_TOKEN = "your_bot_token_here"
+API_ID = 26195153          # <-- আপনার API ID দিন
+API_HASH = "cffc45876502fd70a6d20141b3bd1c8f"
+BOT_TOKEN = "7611511169:AAGHJMNrHeTt5FHkYEAmmBJz8ce_plixDmw"
 BASE_URL = "https://your-domain.onrender.com"  # Render এর URL বসান
 
 # ========== PYROGRAM BOT ==========
